@@ -67,7 +67,7 @@ const Chat = () => {
         body: JSON.stringify({
           message: userMessage,
           timestamp: new Date().toISOString(),
-          userId: 'user_' + Date.now(), // ID único temporal para el usuario
+          userId: 'user_' + Date.now(),
           source: 'jama_chat'
         })
       });
@@ -103,23 +103,31 @@ const Chat = () => {
     setIsTyping(true);
 
     try {
-      // Enviar mensaje al webhook
-      await sendToWebhook(messageText);
+      // Enviar mensaje al webhook y obtener respuesta
+      const webhookResponse = await sendToWebhook(messageText);
       
-      // Simulate AI response
-      setTimeout(() => {
-        const botResponse: Message = {
-          id: (Date.now() + 1).toString(),
-          text: '¡Perfecto! Basándome en lo que me dices, he encontrado algunos lugares que podrían interesarte. Aquí tienes mis recomendaciones:',
-          isBot: true,
-          timestamp: new Date(),
-          recommendations: sampleRecommendations,
-        };
+      // Crear respuesta del bot con los datos del webhook
+      const botResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        text: webhookResponse.message || webhookResponse.response || 'Lo siento, no pude procesar tu mensaje correctamente.',
+        isBot: true,
+        timestamp: new Date(),
+        // Si el webhook devuelve recomendaciones, las incluimos
+        recommendations: webhookResponse.recommendations || (webhookResponse.message && webhookResponse.message.includes('recomendaciones') ? sampleRecommendations : undefined),
+      };
 
-        setMessages(prev => [...prev, botResponse]);
-        setIsTyping(false);
-      }, 2000);
+      setMessages(prev => [...prev, botResponse]);
+      setIsTyping(false);
     } catch (error) {
+      // En caso de error, mostrar mensaje de fallback
+      const errorResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        text: 'Disculpa, estoy teniendo problemas técnicos en este momento. Por favor, inténtalo de nuevo.',
+        isBot: true,
+        timestamp: new Date(),
+      };
+      
+      setMessages(prev => [...prev, errorResponse]);
       setIsTyping(false);
     }
   };
