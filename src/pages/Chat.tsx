@@ -1,10 +1,10 @@
-
 import { useState } from 'react';
 import { Send, Bot, User, MapPin, Clock, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import Navigation from '@/components/Navigation';
+import { toast } from 'sonner';
 
 interface Message {
   id: string;
@@ -57,6 +57,36 @@ const Chat = () => {
     },
   ];
 
+  const sendToWebhook = async (userMessage: string) => {
+    try {
+      const response = await fetch('https://madererayenny.app.n8n.cloud/webhook-test/flujodetrabajo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: userMessage,
+          timestamp: new Date().toISOString(),
+          userId: 'user_' + Date.now(), // ID único temporal para el usuario
+          source: 'jama_chat'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Webhook response:', data);
+      
+      return data;
+    } catch (error) {
+      console.error('Error sending to webhook:', error);
+      toast.error('Error al procesar tu mensaje. Inténtalo de nuevo.');
+      throw error;
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
@@ -68,22 +98,30 @@ const Chat = () => {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const messageText = inputValue;
     setInputValue('');
     setIsTyping(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const botResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        text: '¡Perfecto! Basándome en lo que me dices, he encontrado algunos lugares que podrían interesarte. Aquí tienes mis recomendaciones:',
-        isBot: true,
-        timestamp: new Date(),
-        recommendations: sampleRecommendations,
-      };
+    try {
+      // Enviar mensaje al webhook
+      await sendToWebhook(messageText);
+      
+      // Simulate AI response
+      setTimeout(() => {
+        const botResponse: Message = {
+          id: (Date.now() + 1).toString(),
+          text: '¡Perfecto! Basándome en lo que me dices, he encontrado algunos lugares que podrían interesarte. Aquí tienes mis recomendaciones:',
+          isBot: true,
+          timestamp: new Date(),
+          recommendations: sampleRecommendations,
+        };
 
-      setMessages(prev => [...prev, botResponse]);
+        setMessages(prev => [...prev, botResponse]);
+        setIsTyping(false);
+      }, 2000);
+    } catch (error) {
       setIsTyping(false);
-    }, 2000);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
