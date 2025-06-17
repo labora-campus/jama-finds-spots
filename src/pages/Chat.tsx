@@ -107,13 +107,14 @@ const Chat = () => {
       const webhookResponse = await sendToWebhook(messageText);
       
       // Crear respuesta del bot con los datos del webhook
+      // Acceder a la propiedad 'output' que es donde viene la respuesta real
       const botResponse: Message = {
         id: (Date.now() + 1).toString(),
-        text: webhookResponse.message || webhookResponse.response || 'Lo siento, no pude procesar tu mensaje correctamente.',
+        text: webhookResponse.output || webhookResponse.message || webhookResponse.response || 'Lo siento, no pude procesar tu mensaje correctamente.',
         isBot: true,
         timestamp: new Date(),
         // Si el webhook devuelve recomendaciones, las incluimos
-        recommendations: webhookResponse.recommendations || (webhookResponse.message && webhookResponse.message.includes('recomendaciones') ? sampleRecommendations : undefined),
+        recommendations: webhookResponse.recommendations || (webhookResponse.output && webhookResponse.output.includes('recomend') ? sampleRecommendations : undefined),
       };
 
       setMessages(prev => [...prev, botResponse]);
